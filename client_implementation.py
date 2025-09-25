@@ -33,8 +33,10 @@ class MCPclient:
 async def main():
     async with MCPclient("http://127.0.0.1:8000/mcp") as client:
         tools = await client.tools_list()
-        print(tools)
-        tool_call = await client.tool_call("hello", {"name" : "user"})
+        print( tools)
+        tool_call = await client.tool_call("edit_document", {"id" : "report.pdf",
+                                                             "old_content": "The report details the state of a 20m condenser tower.",
+                                                             "new_content": "The report details the state of a 30m condenser tower."})
         print("tool call result =======>" , tool_call)
 
 asyncio.run(main())

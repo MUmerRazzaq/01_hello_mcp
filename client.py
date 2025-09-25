@@ -9,11 +9,11 @@ headers = {
 
 body = {
     "jsonrpc": "2.0",
-    "method": "tools/call",         # if using tools/list if will return a list of available tools
+    "method": "tools/call",         # if using "tools/list" if will return a list of available tools
     "params": {
-        "name": "hello",
+        "name": "read_document",
         "arguments": {
-            "name": "TestUser"
+            "id": "report.pdf"
         }
     },
     "id": 1
