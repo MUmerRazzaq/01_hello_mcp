@@ -1,6 +1,11 @@
 from mcp.server.fastmcp import FastMCP
 from pydantic import Field
-mcp = FastMCP(name="hello_mcp", stateless_http=True)
+import base64
+import os
+from pathlib import Path
+
+
+mcp = FastMCP(name="hello_mcp", stateless_http=True )
 docs = {
     "deposition.md": "This deposition covers the testimony of Angela Smith, P.E.",
     "report.pdf": "The report details the state of a 20m condenser tower.",
@@ -9,6 +14,16 @@ docs = {
     "plan.md": "The plan outlines the steps for the project's implementation.",
     "spec.txt": "These specifications define the technical requirements for the equipment.",
 }
+
+# images_path = Path(__file__).parent / "images"
+# images_path.mkdir(parents=True, exist_ok=True)
+# image_extensions = {".png", ".jpg", ".jpeg", ".gif", ".bmp"}
+# image_files = {
+#     file.name: file
+#     for file in images_path.iterdir()
+#     if file.suffix.lower() in image_extensions and file.is_file()
+# }
+
 
 @mcp.tool()
 def hello(name: str = Field(..., description="The name of the person to greet")) -> str:
@@ -32,6 +47,20 @@ def edit_document(id: str = Field(..., description="The ID of the document to ed
         raise ValueError("Old content does not match.")
     docs[id] = new_content
     return docs[id]
+
+@mcp.resource(uri="docs://documents",mime_type="application/json")
+def list_documents() -> list[str]:
+    """List all document IDs."""
+    return list(docs.keys())
+
+
+@mcp.resource(uri="docs://documents/{id}", mime_type="text/plain" )
+def get_document(id: str) -> str:
+    if id not in docs:
+        raise ValueError(f"Document with id '{id}' not found.")
+    return docs[id]
+
+# @mcp.read_resource(uri="docs://documents/{id}", mime_type="text/plain")
 
 
 
