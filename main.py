@@ -15,6 +15,14 @@ docs = {
     "spec.txt": "These specifications define the technical requirements for the equipment.",
 }
 
+
+images = {
+    "diagram.png": "d:/MCP_Learning/01_hello_mcp/images/diagram.png",
+    "chart.jpeg": "d:/MCP_Learning/01_hello_mcp/images/chart.jpeg",
+    "screenshot.jpg": "d:/MCP_Learning/01_hello_mcp/images/screenshot.jpg",
+}
+
+
 # images_path = Path(__file__).parent / "images"
 # images_path.mkdir(parents=True, exist_ok=True)
 # image_extensions = {".png", ".jpg", ".jpeg", ".gif", ".bmp"}
@@ -60,8 +68,27 @@ def get_document(id: str) -> str:
         raise ValueError(f"Document with id '{id}' not found.")
     return docs[id]
 
-# @mcp.read_resource(uri="docs://documents/{id}", mime_type="text/plain")
 
 
+
+@mcp.resource(uri="images://images", mime_type="application/json")
+def list_images() -> list[str]:
+    """List all available image IDs."""
+    return list(images.keys())
+
+
+@mcp.resource(uri="images://images/{id}", mime_type="text/plain")
+def get_image_base64(id: str) -> str:
+    """Get image as base64 encoded string."""
+    if id not in images:
+        raise ValueError(f"Image with id '{id}' not found.")
+    
+    file_path = Path(images[id])
+    if not file_path.exists():
+        raise ValueError(f"Image file not found at path: {file_path}")
+    
+    with open(file_path, "rb") as f:
+        image_data = f.read()
+        return base64.b64encode(image_data).decode('utf-8')
 
 mcp_server = mcp.streamable_http_app()

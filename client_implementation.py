@@ -4,6 +4,8 @@ from contextlib import AsyncExitStack
 import asyncio
 import json
 from pydantic import AnyUrl
+import base64
+from pathlib import Path
 
 class MCPClient:
     def __init__(self, url):
@@ -53,35 +55,35 @@ class MCPClient:
     
 
 
+async def fetch_and_print_resource(client: MCPClient, resource_uri: str):
+    """Fetches a resource and recursively fetches its sub-resources if it's a collection."""
+    print(f"\nFetching resource: {resource_uri}")
+    try:
+        content = await client.read_resource(resource_uri)
+        print(f"Content of {resource_uri}:\n", content)
+
+        if isinstance(content, list):
+            # If the content is a list, fetch all sub-resources concurrently
+            tasks = [
+                fetch_and_print_resource(client, f"{resource_uri}/{item}")
+                for item in content
+            ]
+            await asyncio.gather(*tasks)
+    except Exception as e:
+        print(f"Error fetching resource {resource_uri}: {e}")
 
 
 async def main():
     async with MCPClient("http://127.0.0.1:8000/mcp") as client:
-        # tools = await client.tools_list() 
-        # print( tools)
-        # tool_call = await client.tool_call("edit_document", {"id" : "report.pdf",
-        #                                                      "old_content": "The report details the state of a 20m condenser tower.",
-        #                                                      "new_content": "The report details the state of a 30m condenser tower."})
-        # print("\ntool call result:\n" , tool_call)
-        all_resources = await client.list_resources()        
-        uri = all_resources.resources[0].uri
-        print("\nAll Resources:\n" , all_resources)
-        resource_content = await client.read_resource(uri)
-        print(f"\nResource content of {uri}:\n" , resource_content)
-        templates = await client.template_resources()
-        templates_uri = templates.resourceTemplates[0].uriTemplate
-        print("\nAll Resource Templates:\n" , templates_uri)
+        all_resources = await client.list_resources()
         
-        # for r in resource_content:
-        #     result = await client.read_resource(f"{uri}/{r}")
-        #     print(f"\nResource content of {uri}/{r}:\n", result)
-        # return result
+        # Create a list of tasks to fetch all top-level resources concurrently
+        tasks = [
+            fetch_and_print_resource(client, res.uri)
+            for res in all_resources.resources
+        ]
+        await asyncio.gather(*tasks)
 
-        for r in resource_content:
-            uri = templates_uri.replace("{id}",r)
-            result = await client.read_resource(uri)
-            print(f"\nResource content of {uri}:\n", result)
-        return result
 
 if __name__ == "__main__":
     asyncio.run(main())
