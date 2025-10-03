@@ -94,6 +94,6 @@ async def main():
             print(f" - {prompt.name}: {prompt.description}")
         if "format" in [p.name for p in prompts]:
             formatted = await client.get_prompt("format", {"doc_content": "test document content"})
-            print("Formatted Document:\n", formatted.messages)
+            print("Formatted Document:\n", formatted.messages[0].content.text)
 if __name__ == "__main__":
     asyncio.run(main())
