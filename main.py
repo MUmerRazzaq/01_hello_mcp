@@ -1,4 +1,6 @@
 from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp.prompts import base
+from mcp.types import PromptMessage, TextContent, ImageContent
 from pydantic import Field
 import base64
 import os
@@ -90,5 +92,59 @@ def get_image_base64(id: str) -> str:
     with open(file_path, "rb") as f:
         image_data = f.read()
         return base64.b64encode(image_data).decode('utf-8')
+
+@mcp.prompt(
+    name="format",
+    description="Rewrites the contents of the document in Markdown format.",
+)
+def format_document(
+    doc_content: str = Field(description="Contents of the document to format"),
+) -> list[base.Message]:
+    prompt = f"""
+    Your goal is to reformat a document to be written with markdown syntax.
+
+    The contents of the document you need to reformat is:
+    <document_content>
+    {doc_content}
+    </document_content>
+
+    Add in headers, bullet points, tables, etc as necessary. Feel free to add in extra text, but don't change the meaning of the report.
+    After the document has been edited, respond with the final version of the doc. Don't explain your changes.
+    """
+
+    return [base.UserMessage(prompt), base.AssistantMessage("Always respond with the final version of the document in markdown format.")]
+
+@mcp.prompt(
+    name="image", description="Get an image explanation."
+)
+def get_image(id: str) -> base.Message:
+    if id not in images:
+        raise ValueError(f"Image with id '{id}' not found.")
+    
+    file_path = Path(images[id])
+    if not file_path.exists():
+        raise ValueError(f"Image file not found at path: {file_path}")
+    
+    with open(file_path, "rb") as f:
+        image_data = f.read()
+        data = base64.b64encode(image_data).decode('utf-8')
+        return base.UserMessage(
+            content=ImageContent(
+                type="image",
+                data=data,
+                mimeType=f"image/{file_path.suffix.lstrip('.')}",
+            )
+        )
+        # return PromptMessage(
+        #     role="user",
+        #     content=ImageContent(
+        #         type="image",
+        #         data=data,
+        #         mimeType=f"image/{file_path.suffix.lstrip('.')}",
+        #     )
+        # )
+
+
+
 
 mcp_server = mcp.streamable_http_app()

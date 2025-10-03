@@ -51,6 +51,11 @@ class MCPClient:
                     return resource.text  # Return as plain text if JSON is invalid            
         return resource.text
     
+    async def prompts_list (self) -> types.ListPromptsResult:
+        return (await self._sess.list_prompts()).prompts
+    
+    async def get_prompt (self, prompt_name , *args , **kwargs) -> types.GetPromptResult:
+        return (await self._sess.get_prompt(prompt_name , *args , **kwargs))
 
     
 
@@ -60,7 +65,7 @@ async def fetch_and_print_resource(client: MCPClient, resource_uri: str):
     print(f"\nFetching resource: {resource_uri}")
     try:
         content = await client.read_resource(resource_uri)
-        print(f"Content of {resource_uri}:\n", content)
+        print(f"Content of {resource_uri}:\n", str(content)[:200])
 
         if isinstance(content, list):
             # If the content is a list, fetch all sub-resources concurrently
@@ -75,15 +80,20 @@ async def fetch_and_print_resource(client: MCPClient, resource_uri: str):
 
 async def main():
     async with MCPClient("http://127.0.0.1:8000/mcp") as client:
-        all_resources = await client.list_resources()
+        # all_resources = await client.list_resources()
         
-        # Create a list of tasks to fetch all top-level resources concurrently
-        tasks = [
-            fetch_and_print_resource(client, res.uri)
-            for res in all_resources.resources
-        ]
-        await asyncio.gather(*tasks)
-
-
+        # # Create a list of tasks to fetch all top-level resources concurrently
+        # tasks = [
+        #     fetch_and_print_resource(client, res.uri)
+        #     for res in all_resources.resources
+        # ]
+        # await asyncio.gather(*tasks)
+        prompts = await client.prompts_list()
+        print("Available Prompts:", prompts)
+        for prompt in prompts:
+            print(f" - {prompt.name}: {prompt.description}")
+        if "format" in [p.name for p in prompts]:
+            formatted = await client.get_prompt("format", {"doc_content": "test document content"})
+            print("Formatted Document:\n", formatted.messages)
 if __name__ == "__main__":
     asyncio.run(main())
