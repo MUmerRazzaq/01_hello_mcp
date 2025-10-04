@@ -4,8 +4,6 @@ from contextlib import AsyncExitStack
 import asyncio
 import json
 from pydantic import AnyUrl
-import base64
-from pathlib import Path
 
 class MCPClient:
     def __init__(self, url):

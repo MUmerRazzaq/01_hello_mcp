@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 
 
-mcp = FastMCP(name="hello_mcp", stateless_http=True )
+mcp = FastMCP(name="hello_mcp", stateless_http=False )
 docs = {
     "deposition.md": "This deposition covers the testimony of Angela Smith, P.E.",
     "report.pdf": "The report details the state of a 20m condenser tower.",
