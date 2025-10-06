@@ -1,6 +1,6 @@
-from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp import FastMCP, Context
 from mcp.server.fastmcp.prompts import base
-from mcp.types import PromptMessage, TextContent, ImageContent
+from mcp.types import PromptMessage, TextContent, ImageContent, SamplingMessage
 from pydantic import Field
 import base64
 import os
@@ -33,6 +33,33 @@ images = {
 #     for file in images_path.iterdir()
 #     if file.suffix.lower() in image_extensions and file.is_file()
 # }
+
+
+@mcp.tool(name="story_generator", description="Generate a short story based on a given topic.")
+async def story_generator(topic: str, ctx : Context) -> str:
+    """Generate a short story based on a given topic. Using Client LLM"""
+    print(f"-> Server: Tool 'create_story' called with topic: '{topic}'")
+    try:
+        print(f"-> Server: Sending 'sampling/create' request to client...")
+        response = await ctx.session.create_message(
+            messages=[
+                SamplingMessage(role="user", content=TextContent(type="text", text=f"Write a short story about {topic}.")),
+            ],            
+            # model_preferences="gemini-2.0-flash",
+            max_tokens=500
+        )
+
+        print(f"-> Server: Received response from client: {response}")
+        if response.content.type == "text":
+            return response.content.text
+        return str(response)
+
+    except Exception as e:
+        print(f"-> Server: An error occurred during sampling: {e}")
+        return f"Error asking client to generate story: {e}"
+
+
+
 
 
 @mcp.tool()

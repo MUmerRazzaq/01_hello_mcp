@@ -1,9 +1,43 @@
 from mcp import ClientSession , types
+from mcp.shared.context import RequestContext
 from mcp.client.streamable_http import streamablehttp_client
 from contextlib import AsyncExitStack
 import asyncio
 import json
 from pydantic import AnyUrl
+from typing import Any
+from agent import llm_agent
+
+async def sampler(ctx: RequestContext[ClientSession, Any], param: types.CreateMessageRequestParams) -> types.CreateMessageResult | types.ErrorData:
+    print("<- Client: Received 'sampling/create' request from server.")
+
+    print(f"<- Client Parameters '{param}'.\n")
+    print(f"<- Client Request ID '{ctx.request_id}'.\n")
+    print(f"<- Client Context '{ctx}'.\n")
+    print(f"<- Client Message '{param.messages}'.\n")
+
+    # mock_llm_response = (
+    #     f"In a world of shimmering code, a brave little function set out to find the legendary Golden Bug. "
+    #     f"It traversed treacherous loops and navigated complex conditionals. "
+    #     f"Finally, it found not a bug, but a feature, more valuable than any treasure."
+    # )
+
+    print("-> Client: Sending story back to the server.")
+
+    # Respond with a dictionary that matches the expected structure
+    # return types.CreateMessageResult(
+    #     role="assistant",
+    #     content=types.TextContent(text=mock_llm_response, type="text"),
+    #     model="openai/gpt-4o-mini",
+    # )
+
+    response_text = await llm_agent(str(param.messages[0].content.text))
+    return types.CreateMessageResult(  
+        role="assistant",
+        content=types.TextContent(type="text", text=response_text),
+        model="gemini-2.0-flash",
+    )
+
 
 class MCPClient:
     def __init__(self, url):
@@ -16,7 +50,7 @@ class MCPClient:
         )
 
         self._sess = await self.stack.enter_async_context(
-            ClientSession(read,write)
+            ClientSession(read, write, sampling_callback=sampler)
         )
         await self._sess.initialize()
         return self
@@ -86,12 +120,16 @@ async def main():
         #     for res in all_resources.resources
         # ]
         # await asyncio.gather(*tasks)
-        prompts = await client.prompts_list()
-        print("Available Prompts:", prompts)
-        for prompt in prompts:
-            print(f" - {prompt.name}: {prompt.description}")
-        if "format" in [p.name for p in prompts]:
-            formatted = await client.get_prompt("format", {"doc_content": "test document content"})
-            print("Formatted Document:\n", formatted.messages[0].content.text)
+        # prompts = await client.prompts_list()
+        # print("Available Prompts:", prompts)
+        # for prompt in prompts:
+        #     print(f" - {prompt.name}: {prompt.description}")
+        # if "format" in [p.name for p in prompts]:
+        #     formatted = await client.get_prompt("format", {"doc_content": "test document content"})
+        #     print("Formatted Document:\n", formatted.messages[0].content.text)
+        tools = await client.tool_call("story_generator", {"topic": "the sea"})
+        print("Tool Call Result:\n", tools)
+
+
 if __name__ == "__main__":
     asyncio.run(main())
