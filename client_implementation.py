@@ -12,6 +12,7 @@ async def sampler(ctx: RequestContext[ClientSession, Any], param: types.CreateMe
     print("<- Client: Received 'sampling/create' request from server.")
 
     print(f"<- Client Parameters '{param}'.\n")
+    print(f"<- Model Name '{param.modelPreferences.hints[0].name}'.\n")
     print(f"<- Client Request ID '{ctx.request_id}'.\n")
     print(f"<- Client Context '{ctx}'.\n")
     print(f"<- Client Message '{param.messages}'.\n")
@@ -31,11 +32,11 @@ async def sampler(ctx: RequestContext[ClientSession, Any], param: types.CreateMe
     #     model="openai/gpt-4o-mini",
     # )
 
-    response_text = await llm_agent(str(param.messages[0].content.text))
+    response_text = await llm_agent(input_text=str(param.messages[0].content.text), MODEL=param.modelPreferences.hints[0].name)
     return types.CreateMessageResult(  
         role="assistant",
         content=types.TextContent(type="text", text=response_text),
-        model="gemini-2.0-flash",
+        model=param.modelPreferences.hints[0].name,
     )
 
 
@@ -127,8 +128,14 @@ async def main():
         # if "format" in [p.name for p in prompts]:
         #     formatted = await client.get_prompt("format", {"doc_content": "test document content"})
         #     print("Formatted Document:\n", formatted.messages[0].content.text)
+        # tasks = [client.tool_call("story_generator", {"topic": "the sea"}) for _ in range(3)]
+        # results = await asyncio.gather(*tasks)
+        # for i, result in enumerate(results):
+        #     print(f"Tool Call Result {i+1}:\n", result.content[0].text)
+
         tools = await client.tool_call("story_generator", {"topic": "the sea"})
         print("Tool Call Result:\n", tools)
+        # print("Tool Call Result:\n", tools.content[0].text)
 
 
 if __name__ == "__main__":

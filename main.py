@@ -1,6 +1,6 @@
 from mcp.server.fastmcp import FastMCP, Context
 from mcp.server.fastmcp.prompts import base
-from mcp.types import PromptMessage, TextContent, ImageContent, SamplingMessage
+from mcp.types import PromptMessage, TextContent, ImageContent, SamplingMessage, ModelPreferences, ModelHint
 from pydantic import Field
 import base64
 import os
@@ -43,10 +43,12 @@ async def story_generator(topic: str, ctx : Context) -> str:
         print(f"-> Server: Sending 'sampling/create' request to client...")
         response = await ctx.session.create_message(
             messages=[
-                SamplingMessage(role="user", content=TextContent(type="text", text=f"Write a short story about {topic}.")),
-            ],            
-            # model_preferences="gemini-2.0-flash",
+                SamplingMessage(role="user", content=TextContent(type="text", text=f"Write a short story in three lines about : {topic}.")),
+            ],
+            model_preferences=ModelPreferences(hints=[ModelHint(name="gemini-2.0-flash")]),
+            # model_preferences=ModelPreferences(hints=[{"name": "gemini-2.0-flash"}]),
             max_tokens=500
+            
         )
 
         print(f"-> Server: Received response from client: {response}")
