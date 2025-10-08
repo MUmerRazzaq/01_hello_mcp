@@ -1,6 +1,7 @@
 from mcp.server.fastmcp import FastMCP, Context
 from mcp.server.fastmcp.prompts import base
-from mcp.types import PromptMessage, TextContent, ImageContent, SamplingMessage, ModelPreferences, ModelHint
+from mcp.types import (PromptMessage, TextContent, ImageContent, 
+                       SamplingMessage, ModelPreferences, ModelHint , ProgressNotificationParams)
 from pydantic import Field
 import base64
 import os
@@ -39,8 +40,10 @@ images = {
 async def story_generator(topic: str, ctx : Context) -> str:
     """Generate a short story based on a given topic. Using Client LLM"""
     print(f"-> Server: Tool 'create_story' called with topic: '{topic}'")
+    await ctx.info(f"-> Server: Tool 'create_story' called with topic: '{topic}'")
     try:
         print(f"-> Server: Sending 'sampling/create' request to client...")
+        await ctx.info("-> Server: Sending 'sampling/create' request to client...")
         response = await ctx.session.create_message(
             messages=[
                 SamplingMessage(role="user", content=TextContent(type="text", text=f"Write a short story in three lines about : {topic}.")),
@@ -52,12 +55,14 @@ async def story_generator(topic: str, ctx : Context) -> str:
         )
 
         print(f"-> Server: Received response from client: {response}")
+        await ctx.info(f"-> Server: Received response from client.")
         if response.content.type == "text":
             return response.content.text
         return str(response)
 
     except Exception as e:
         print(f"-> Server: An error occurred during sampling: {e}")
+        await ctx.error(f"-> Server: An error occurred during sampling: {e}")
         return f"Error asking client to generate story: {e}"
 
 

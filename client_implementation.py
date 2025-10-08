@@ -8,6 +8,18 @@ from pydantic import AnyUrl
 from typing import Any
 from agent import llm_agent
 
+async def log_handler(params:types.LoggingMessageNotificationParams):
+    # print(f"PRINT LOG: {params}")
+    emoji_map = {
+        "debug": "🔍",
+        "info": "📰",
+        "warning": "⚠️",
+        "error": "❌",
+    }
+    emoji = emoji_map.get(params.level, "ℹ️")
+    logger_info = f" [{params.logger}]" if params.logger else ""
+    print(f"{emoji} [{params.level.upper()}]{logger_info} {params.data}")
+
 async def sampler(ctx: RequestContext[ClientSession, Any], param: types.CreateMessageRequestParams) -> types.CreateMessageResult | types.ErrorData:
     print("<- Client: Received 'sampling/create' request from server.")
 
@@ -51,7 +63,7 @@ class MCPClient:
         )
 
         self._sess = await self.stack.enter_async_context(
-            ClientSession(read, write, sampling_callback=sampler)
+            ClientSession(read, write, sampling_callback=sampler, logging_callback=log_handler)
         )
         await self._sess.initialize()
         return self
