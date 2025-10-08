@@ -1,11 +1,15 @@
 from mcp.server.fastmcp import FastMCP, Context
 from mcp.server.fastmcp.prompts import base
 from mcp.types import (PromptMessage, TextContent, ImageContent, 
-                       SamplingMessage, ModelPreferences, ModelHint , ProgressNotificationParams)
+                       SamplingMessage, ModelPreferences, ModelHint)
 from pydantic import Field
 import base64
 import os
 from pathlib import Path
+import random
+import asyncio
+
+
 
 
 mcp = FastMCP(name="hello_mcp", stateless_http=False )
@@ -70,9 +74,26 @@ async def story_generator(topic: str, ctx : Context) -> str:
 
 
 @mcp.tool()
-def hello(name: str = Field(..., description="The name of the person to greet")) -> str:
-    """Say hello to someone."""
-    return f"\nHello, {name}!\n"
+async def get_db(ctx : Context , db_name: str) -> list[TextContent]:
+    await ctx.info(f"connecting to db {db_name}")
+    
+    await ctx.report_progress(progress=25,total=100, message="starting connection")
+    await asyncio.sleep(2)
+    await ctx.report_progress(progress=50,total=100, message="connecting to db server")
+    await asyncio.sleep(2)
+    await ctx.report_progress(progress=75,total=100, message="connecting to db schema")
+    await asyncio.sleep(2)
+    if random.choice([False,True]):
+        await ctx.error("failed to connect to db")
+        await ctx.report_progress(progress=75,total=100, message="error connecting to db")
+        raise Exception("failed to connect to db")
+
+    await asyncio.sleep(2)
+    progress = 100
+    message = "connected to db"
+    await ctx.report_progress(progress=progress,total=100, message=message)
+    await ctx.info(f"connected to db {db_name}")
+    return [TextContent(type="text", text=f"connected to db from {db_name}")]
 
 
 @mcp.tool(name="read_document", description="Read the contents of a document by its ID.")

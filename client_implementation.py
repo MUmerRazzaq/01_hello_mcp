@@ -20,6 +20,15 @@ async def log_handler(params:types.LoggingMessageNotificationParams):
     logger_info = f" [{params.logger}]" if params.logger else ""
     print(f"{emoji} [{params.level.upper()}]{logger_info} {params.data}")
 
+async def progress_handler(progress: float, total: float | None, message: str | None):
+    if total:
+        percentage = (progress / total) * 100
+        progress_bar = "█" * int(percentage // 5) + "░" * (20 - int(percentage // 5))
+        print(f"    📊 [{progress_bar}] {percentage:.1f}% - {message or 'Working...'}")
+    else:
+        print(f"    📊 Progress: {progress} - {message or 'Working...'}")
+
+
 async def sampler(ctx: RequestContext[ClientSession, Any], param: types.CreateMessageRequestParams) -> types.CreateMessageResult | types.ErrorData:
     print("<- Client: Received 'sampling/create' request from server.")
 
@@ -29,21 +38,8 @@ async def sampler(ctx: RequestContext[ClientSession, Any], param: types.CreateMe
     print(f"<- Client Context '{ctx}'.\n")
     print(f"<- Client Message '{param.messages}'.\n")
 
-    # mock_llm_response = (
-    #     f"In a world of shimmering code, a brave little function set out to find the legendary Golden Bug. "
-    #     f"It traversed treacherous loops and navigated complex conditionals. "
-    #     f"Finally, it found not a bug, but a feature, more valuable than any treasure."
-    # )
-
     print("-> Client: Sending story back to the server.")
-
-    # Respond with a dictionary that matches the expected structure
-    # return types.CreateMessageResult(
-    #     role="assistant",
-    #     content=types.TextContent(text=mock_llm_response, type="text"),
-    #     model="openai/gpt-4o-mini",
-    # )
-
+    
     response_text = await llm_agent(input_text=str(param.messages[0].content.text), MODEL=param.modelPreferences.hints[0].name)
     return types.CreateMessageResult(  
         role="assistant",
@@ -145,9 +141,8 @@ async def main():
         # for i, result in enumerate(results):
         #     print(f"Tool Call Result {i+1}:\n", result.content[0].text)
 
-        tools = await client.tool_call("story_generator", {"topic": "the sea"})
-        print("Tool Call Result:\n", tools)
-        # print("Tool Call Result:\n", tools.content[0].text)
+        tools = await client.tool_call("get_db", {"db_name": "user_db"}, progress_callback=progress_handler)
+        print("Tool Call Result:\n", tools.content[0].text)
 
 
 if __name__ == "__main__":
